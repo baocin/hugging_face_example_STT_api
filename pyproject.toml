@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "hugging_api"
+version = "0.1.0"
+description = ""
+authors = ["Michael Pedersen <steele.pedersen+hugapi@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+fastapi = "^0.63.0"
+uvicorn = {extras = ["standard"], version = "^0.13.3"}
+spacy = "^3.0.1"
+aiofiles = "^0.6.0"
+transformers = "^4.3.0"
+datasets = "^1.2.1"
+SoundFile = "^0.10.3"
+torch = "^1.7.1"
+torchvision = "^0.8.2"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
