@@ -35,8 +35,6 @@ vad_model, vad_utils = torch.hub.load(repo_or_dir='snakers4/silero-vad',
                               force_reload=False)
 (vad_get_speech_ts, _, vad_read_audio, _, _, _) = vad_utils
 
-audio_file = 'audio1.wav'
-
 def read_audio(path: str, target_sr: int = 16000):
     assert torchaudio.get_audio_backend() == 'soundfile'
     wav, sr = torchaudio.load(path)
@@ -84,34 +82,37 @@ async def vad(audio_url: str = Query(..., min_length=10), return_speech_only_wav
             outwav_contents = f.read()
         os.remove(raw_audio_out_filename)
         return Response(content=outwav_contents, media_type="audio/wav", headers={'Content-Disposition': f'filename={raw_audio_out_filename}'})
-        
-async def transcribe(raw_audio, use_vad=True):
-    speech = raw_audio
-    if (use_vad):
-        speech_timestamps = vad_get_speech_ts(raw_audio, vad_model, num_steps=4)
-        speech = []
-        [speech.extend(raw_audio[x['start']:x['end']]) for x in speech_timestamps]
-        print(f'Using Voice Activity Detection we cut out the silence, reducing sample count from {len(raw_audio)} to {len(speech)}.')
+
+async def transcribe(speech):
     input_values = tokenizer(speech, return_tensors="pt").input_values  # Batch size 1
     logits = model(input_values).logits
     predicted_ids = torch.argmax(logits, dim=-1)
     transcription = tokenizer.decode(predicted_ids[0])
     return transcription
 
+async def split_and_transcribe(raw_audio, vad_steps=4):
+    speech_timestamps = vad_get_speech_ts(raw_audio, vad_model, num_steps=vad_steps)
+    speeches = []
+    [speeches.append(raw_audio[x['start']:x['end']]) for x in speech_timestamps]
+    # print(f'Using Voice Activity Detection we cut out the silence, reducing sample count from {len(raw_audio)} to {len(list(map(speeches.extend, speeches)))}.')
+    return [await transcribe(speech) for speech in speeches]
+
 @app.get("/transcribe_url")
-async def transcribe_url(audio_url: str = Query(..., min_length=10), use_vad: bool = True):
+async def transcribe_url(audio_url: str = Query(..., min_length=10), vad_steps: int = 8):
     raw_audio_filename = download_wav(audio_url)
     raw_audio = read_audio(raw_audio_filename)
-    return await transcribe(raw_audio, use_vad)
+    os.remove(raw_audio_filename)
+    return await split_and_transcribe(raw_audio, vad_steps)
 
 @app.post("/transcribe_upload")
-async def transcribe_upload(file: UploadFile = File(...), use_vad: bool = True):
+async def transcribe_upload(file: UploadFile = File(...), vad_steps: int = 8):
     file_as_numpy = np.frombuffer((await file.read()), dtype=np.int32)
     ## Assume upload is a wav, 16000Hz
     raw_audio_filename = f'{uuid.uuid1()}.wav'
     wavf.write(raw_audio_filename, 16000, file_as_numpy)
     raw_audio = read_audio(raw_audio_filename)
-    return await transcribe(raw_audio, use_vad)
+    os.remove(raw_audio_filename)
+    return await split_and_transcribe(raw_audio, vad_steps)
 
 
 if __name__ == "__main__":
