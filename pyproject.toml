@@ -16,6 +16,10 @@ SoundFile = "^0.10.3"
 torch = "^1.7.1"
 torchvision = "^0.8.2"
 librosa = "^0.8.0"
+torchaudio = "^0.7.2"
+requests = "^2.25.1"
+scipy = "^1.6.0"
+python-multipart = "^0.0.5"
 
 [tool.poetry.dev-dependencies]
 
