@@ -3,6 +3,7 @@
 1. Install [poetry](https://python-poetry.org/docs/) - a python dependency manager
 2. `poetry install`
 3. `poetry run python main.py`
+4. Pop open a browser to [http://localhost:8001/](http://localhost:8001/) to see the docs.
 
 ![Swagger API Documentation Screenshot](static/swagger_screenshot.png)
 
