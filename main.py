@@ -21,6 +21,7 @@ import requests
 import uuid
 import scipy.io.wavfile as wavf
 import numpy as np
+from io import BytesIO
 
 port = 8001
 app = FastAPI()
@@ -101,22 +102,16 @@ async def transcribe(raw_audio, use_vad=True):
 async def transcribe_url(audio_url: str = Query(..., min_length=10), use_vad: bool = True):
     raw_audio_filename = download_wav(audio_url)
     raw_audio = read_audio(raw_audio_filename)
-    return transcribe(raw_audio, use_vad)
+    return await transcribe(raw_audio, use_vad)
 
 @app.post("/transcribe_upload")
-async def transcribe_upload(file: UploadFile = File(...)):
-    file2store = await file.read()
-    # pprint(file2store)
-    ### Assume upload is a wav, 16000Hz
+async def transcribe_upload(file: UploadFile = File(...), use_vad: bool = True):
+    file_as_numpy = np.frombuffer((await file.read()), dtype=np.int32)
+    ## Assume upload is a wav, 16000Hz
     raw_audio_filename = f'{uuid.uuid1()}.wav'
-    print(file2store)
-
-    
-    wavf.write(raw_audio_filename, 16000, np.fromfile(file2store))
+    wavf.write(raw_audio_filename, 16000, file_as_numpy)
     raw_audio = read_audio(raw_audio_filename)
-    pprint(raw_audio.shape)
-    # raw_audio = file2store
-    return transcribe(raw_audio)
+    return await transcribe(raw_audio, use_vad)
 
 
 if __name__ == "__main__":
