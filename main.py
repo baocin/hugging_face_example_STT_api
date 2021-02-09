@@ -22,7 +22,16 @@ import uuid
 import scipy.io.wavfile as wavf
 import numpy as np
 from io import BytesIO
+from youtube_dl import YoutubeDL
 
+yt_audio_downloader = YoutubeDL({
+    'format': 'bestaudio/best',
+    'postprocessors': [{
+        'key': 'FFmpegExtractAudio',
+        'preferredcodec': 'wav'
+    }],
+    'outtmpl': "./%(id)s.%(ext)s" # VIDEOID.wav
+})
 port = 8001
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -114,6 +123,15 @@ async def transcribe_upload(file: UploadFile = File(...), vad_steps: int = 8):
     os.remove(raw_audio_filename)
     return await split_and_transcribe(raw_audio, vad_steps)
 
+@app.get("/transcribe_youtube")
+async def transcribe_youtube(video_url: str = Query(..., min_length=10), vad_steps: int = 8):
+    video_info = yt_audio_downloader.extract_info(video_url)
+    raw_audio_filename = f'{video_info["id"]}.wav'
+    raw_audio = read_audio(raw_audio_filename)
+    os.remove(raw_audio_filename)
+    return await split_and_transcribe(raw_audio, vad_steps)
+
+    
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=port)
