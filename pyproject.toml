@@ -15,6 +15,7 @@ datasets = "^1.2.1"
 SoundFile = "^0.10.3"
 torch = "^1.7.1"
 torchvision = "^0.8.2"
+librosa = "^0.8.0"
 
 [tool.poetry.dev-dependencies]
 

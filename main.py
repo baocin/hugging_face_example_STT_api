@@ -9,7 +9,8 @@ from transformers import Wav2Vec2Tokenizer, Wav2Vec2ForMaskedLM
 from datasets import load_dataset
 import soundfile as sf
 import torch
-import tensorflow as tf
+import librosa
+import base64
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -17,7 +18,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Initialize Models
 tokenizer = Wav2Vec2Tokenizer.from_pretrained("facebook/wav2vec2-base-960h")
 model = Wav2Vec2ForMaskedLM.from_pretrained("facebook/wav2vec2-base-960h")
-    
+
 @app.get("/")
 async def read_root():
     def map_to_array(batch):
